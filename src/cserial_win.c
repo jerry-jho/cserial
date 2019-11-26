@@ -1,4 +1,7 @@
+
+
 #include "cserial.h"
+#ifdef OS_WIN
 #include <stdio.h>
 
 serial_t serial_open(const char * port_name,int baudrate) {
@@ -79,3 +82,5 @@ void serial_get_error(char *buf,DWORD *dw) {
         buf,
         0, NULL );
 }
+
+#endif

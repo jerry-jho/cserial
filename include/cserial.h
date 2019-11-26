@@ -32,8 +32,10 @@ typedef  int serial_t;
    
 #endif //OS_WIN
 
+#ifndef TRUE
 #define FALSE  -1    
 #define TRUE   0
+#endif
 
 serial_t serial_open(const char * port_name,int baudrate);
 int  serial_write(serial_t s,char * buffer, int size);

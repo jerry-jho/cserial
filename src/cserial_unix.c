@@ -1,4 +1,7 @@
+
 #include "cserial.h"
+
+#ifdef OS_UNIX
 #include <stdio.h>
 
 serial_t serial_open(const char * port_name,int baudrate) {
@@ -12,31 +15,43 @@ serial_t serial_open(const char * port_name,int baudrate) {
     struct termios options; 
     
     fd = open( port_name, O_RDWR|O_NOCTTY|O_NDELAY);    
-    if (fd<0) return INVALID_SERIAL;    
-                                    
-    if(fcntl(fd, F_SETFL, 0) < 0) {      
+    if (fd<0) {
+        #ifdef _DEBUG
+        fprintf(stderr,"[ERROR] invalid fd %d\n",fd);
+        #endif
+        return INVALID_SERIAL;    
+    }
+
+    if(fcntl(fd, F_SETFL, 0) < 0) { 
+        #ifdef _DEBUG
+        fprintf(stderr,"[ERROR] invalid fcntl %d\n",fd);
+        #endif            
         return INVALID_SERIAL;    
     } else {    
         //printf("fcntl=%d\n",fcntl(fd, F_SETFL,0));    
     }    
-       
-    if(0 == isatty(STDIN_FILENO)) {    
-        //printf("standard input is not a terminal device\n");    
+    
+    /*   
+    if(0 == isatty(STDIN_FILENO)) {   
+        #ifdef _DEBUG
+        fprintf(stderr,"[ERROR] standard input is not a terminal device\n");
+        #endif
         return INVALID_SERIAL;    
     } else {    
         printf("isatty success!\n");    
-    }                  
+    } 
+    */    
     //printf("fd->open=%d\n",fd);    
     
     if( tcgetattr( fd,&options) !=  0) {    
-        //perror("SetupSerial 1");        
+        #ifdef _DEBUG
+        fprintf(stderr,"[ERROR] invalid tcgetattr %d\n",fd);
+        #endif          
         return INVALID_SERIAL;     
     }    
          
-    for ( i= 0;  i < sizeof(speed_arr) / sizeof(int);  i++)    
-    {    
-        if  (baudrate == name_arr[i])    
-        {                 
+    for ( i= 0;  i < sizeof(speed_arr) / sizeof(int);  i++) {    
+        if  (baudrate == name_arr[i]) {                 
             cfsetispeed(&options, speed_arr[i]);     
             cfsetospeed(&options, speed_arr[i]);      
         }    
@@ -45,20 +60,24 @@ serial_t serial_open(const char * port_name,int baudrate) {
   
     options.c_cflag |= CLOCAL;       
     options.c_cflag |= CREAD;    
-    options.c_cflag &= ~CRTSCTS;
+    //options.c_cflag &= ~CRTSCTS;
     options.c_cflag |= CS8; 
     options.c_cflag &= ~PARENB;     
     options.c_iflag &= ~INPCK; 
     options.c_cflag &= ~CSTOPB;
     options.c_oflag &= ~OPOST;    
-    options.c_lflag &= ~(ICANON | ECHO | ECHOE | ISIG);       
+    options.c_lflag &= ~(ICANON | ECHO | ECHOE | ISIG | IEXTEN);       
     options.c_iflag &= ~(ICRNL | IXON);
+    options.c_iflag &= ~(BRKINT | ICRNL | INPCK | ISTRIP | IXON);
     options.c_cc[VTIME] = 1;     
     options.c_cc[VMIN] = 1;    
 
     tcflush(fd,TCIFLUSH);    
     
-    if (tcsetattr(fd,TCSANOW,&options) != 0) {    
+    if (tcsetattr(fd,TCSANOW,&options) != 0) {   
+        #ifdef _DEBUG
+        fprintf(stderr,"[ERROR] invalid tcsetattr %d\n",fd);
+        #endif             
         return INVALID_SERIAL;     
     }    
     
@@ -106,3 +125,4 @@ void serial_get_error(char *buf,unsigned long *dw) {
    
 }
 
+#endif
